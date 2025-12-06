@@ -1,7 +1,9 @@
 FROM node:20-alpine
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl1.1-compat
+# Install OpenSSL and create compatibility symlinks for Prisma
+RUN apk add --no-cache openssl openssl-dev && \
+    ln -s /usr/lib/libssl.so.3 /usr/lib/libssl.so.1.1 2>/dev/null || true && \
+    ln -s /usr/lib/libcrypto.so.3 /usr/lib/libcrypto.so.1.1 2>/dev/null || true
 
 WORKDIR /app
 
