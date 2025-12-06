@@ -1,21 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Users, Ticket, FileText, TrendingUp, RefreshCw, DollarSign, Trash2 } from 'lucide-react';
+import { Users, Ticket, FileText, TrendingUp, RefreshCw, DollarSign, Trash2, X } from 'lucide-react';
 import { MetricCard } from '../components/MetricCard';
 import { StatsChart } from '../components/StatsChart';
 import { RecentActivity } from '../components/RecentActivity';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { getDashboardStats, getRecentActivity } from '../services/analyticsService';
 import { resetRaffle } from '../services/resetService';
 import { toast } from 'sonner';
@@ -27,6 +16,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -53,9 +43,12 @@ export function Dashboard() {
   const handleReset = async () => {
     setResetting(true);
     try {
+      console.log('Starting reset...');
       const result = await resetRaffle();
+      console.log('Reset result:', result);
       if (result.success) {
         toast.success('Rifa reiniciada exitosamente');
+        setShowResetModal(false);
         // Recargar datos después del reset
         await loadData();
         // Disparar evento personalizado para notificar a otros componentes
@@ -142,45 +135,62 @@ export function Dashboard() {
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                disabled={resetting}
-                onClick={(e) => {
-                  console.log('Reset button clicked');
-                }}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                {resetting ? 'Reiniciando...' : 'Reiniciar Rifa'}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="z-50">
-              <AlertDialogHeader>
-                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta acción eliminará <strong>TODOS</strong> los datos de la rifa:
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Todos los participantes</li>
-                    <li>Todos los tickets generados</li>
-                    <li>Se resetearán todas las referencias (marcadas como no usadas)</li>
-                  </ul>
-                  <p className="mt-3 font-semibold text-red-600">
-                    Esta acción NO se puede deshacer.
-                  </p>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={resetting}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    console.log('Reset confirmed, starting reset...');
-                    await handleReset();
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            disabled={resetting}
+            onClick={() => {
+              console.log('Reset button clicked, opening modal');
+              setShowResetModal(true);
+            }}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            {resetting ? 'Reiniciando...' : 'Reiniciar Rifa'}
+          </Button>
+        </div>
+
+        {/* Modal de confirmación */}
+        {showResetModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">¿Estás seguro?</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowResetModal(false)}
                   disabled={resetting}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="mb-6">
+                <p className="text-gray-600 mb-4">
+                  Esta acción eliminará <strong>TODOS</strong> los datos de la rifa:
+                </p>
+                <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
+                  <li>Todos los participantes</li>
+                  <li>Todos los tickets generados</li>
+                  <li>Se resetearán todas las referencias (marcadas como no usadas)</li>
+                </ul>
+                <p className="font-semibold text-red-600">
+                  Esta acción NO se puede deshacer.
+                </p>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowResetModal(false)}
+                  disabled={resetting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleReset}
+                  disabled={resetting}
+                  className="bg-red-600 hover:bg-red-700"
                 >
                   {resetting ? (
                     <>
@@ -190,11 +200,11 @@ export function Dashboard() {
                   ) : (
                     'Sí, Reiniciar Rifa'
                   )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Metrics Grid */}
