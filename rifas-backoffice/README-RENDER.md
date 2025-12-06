@@ -39,8 +39,10 @@ Esta guía te ayudará a desplegar el backoffice de la aplicación de rifas en *
    - **Root Directory:** `rifas-backoffice` ⚠️ **IMPORTANTE**
 
 2. **Configuración de Build:**
-   - **Build Command:** `npm install && npm run build`
-   - **Publish Directory:** `dist`
+   - **Build Command:** `npm install && npm run build` ⚠️ **IMPORTANTE: Debe estar configurado**
+   - **Publish Directory:** `dist` ⚠️ **IMPORTANTE: Debe estar configurado**
+   
+   **Nota:** Si el build command está vacío, Render no ejecutará el build y fallará. Asegúrate de que esté configurado.
 
 ### Paso 4: Configurar Variables de Entorno
 
