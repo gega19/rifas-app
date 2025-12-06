@@ -27,7 +27,6 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
-  const [showResetDialog, setShowResetDialog] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -54,14 +53,16 @@ export function Dashboard() {
   const handleReset = async () => {
     setResetting(true);
     try {
-      await resetRaffle();
-      toast.success('Rifa reiniciada exitosamente');
-      // Cerrar el diálogo
-      setShowResetDialog(false);
-      // Recargar datos después del reset
-      await loadData();
-      // Disparar evento personalizado para notificar a otros componentes
-      window.dispatchEvent(new CustomEvent('raffle-reset'));
+      const result = await resetRaffle();
+      if (result.success) {
+        toast.success('Rifa reiniciada exitosamente');
+        // Recargar datos después del reset
+        await loadData();
+        // Disparar evento personalizado para notificar a otros componentes
+        window.dispatchEvent(new CustomEvent('raffle-reset'));
+      } else {
+        throw new Error(result.error || 'Error al reiniciar la rifa');
+      }
     } catch (err: any) {
       toast.error(err.message || 'Error al reiniciar la rifa');
       console.error('Error resetting raffle:', err);
@@ -141,14 +142,21 @@ export function Dashboard() {
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
           </Button>
-          <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={resetting}>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                disabled={resetting}
+                onClick={(e) => {
+                  console.log('Reset button clicked');
+                }}
+              >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Reiniciar Rifa
+                {resetting ? 'Reiniciando...' : 'Reiniciar Rifa'}
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="z-50">
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -166,11 +174,12 @@ export function Dashboard() {
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={resetting}>Cancelar</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.preventDefault();
-                    handleReset();
+                    console.log('Reset confirmed, starting reset...');
+                    await handleReset();
                   }}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-red-600 hover:bg-red-700 text-white"
                   disabled={resetting}
                 >
                   {resetting ? (
