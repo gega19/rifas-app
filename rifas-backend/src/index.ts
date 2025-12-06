@@ -11,10 +11,18 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? [process.env.WEB_URL, process.env.BACKOFFICE_URL].filter((url): url is string => Boolean(url))
+  : true; // Allow all origins in development
+
+if (process.env.NODE_ENV === 'production') {
+  console.log('[CORS] Allowed origins:', allowedOrigins);
+  console.log('[CORS] WEB_URL:', process.env.WEB_URL);
+  console.log('[CORS] BACKOFFICE_URL:', process.env.BACKOFFICE_URL);
+}
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.WEB_URL, process.env.BACKOFFICE_URL].filter((url): url is string => Boolean(url))
-    : true, // Allow all origins in development
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json());
