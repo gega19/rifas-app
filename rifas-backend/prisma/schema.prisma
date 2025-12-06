@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Reference {
+  id          String   @id @default(cuid())
+  reference   String   @unique @db.VarChar(6)
+  ticketCount Int      @default(5)
+  ticketValue Decimal? @default(0) @db.Decimal(10, 2) // Valor/precio de cada ticket
+  used        Boolean  @default(false)
+  usedAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  participant Participant?
+  
+  @@index([reference])
+  @@index([used])
+  @@map("references")
+}
+
+model Participant {
+  id          String   @id @default(cuid())
+  referenceId String   @unique
+  name        String
+  email       String
+  phone       String
+  cedula      String
+  tickets     String[] // Array de números de tickets (0000-9999)
+  generatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  reference   Reference @relation(fields: [referenceId], references: [reference], onDelete: Cascade)
+  
+  @@index([email])
+  @@index([cedula])
+  @@index([referenceId])
+  @@map("participants")
+}
+
+model Ticket {
+  id        String   @id @default(cuid())
+  number    String   @unique @db.VarChar(4)
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([number])
+  @@index([used])
+  @@map("tickets")
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String   // Hashed password with bcrypt
+  role      String   @default("admin") // admin, super_admin, etc.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([username])
+  @@index([email])
+  @@map("admin_users")
+}
+

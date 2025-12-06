@@ -1,0 +1,30 @@
+{
+  "name": "rifas-app",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "rifas-backend",
+    "rifas-web",
+    "rifas-backoffice"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=rifas-backend\" \"npm run dev --workspace=rifas-web\" \"npm run dev --workspace=rifas-backoffice\"",
+    "dev:backend": "npm run dev --workspace=rifas-backend",
+    "dev:web": "npm run dev --workspace=rifas-web",
+    "dev:backoffice": "npm run dev --workspace=rifas-backoffice",
+    "build": "npm run build --workspaces --if-present",
+    "build:backend": "npm run build --workspace=rifas-backend",
+    "build:web": "npm run build --workspace=rifas-web",
+    "build:backoffice": "npm run build --workspace=rifas-backoffice",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "restore": "./restore.sh",
+    "setup": "npm install && npm run setup --workspace=rifas-backend && npm run docker:up && sleep 5 && npm run prisma:migrate:deploy --workspace=rifas-backend && npm run prisma:seed --workspace=rifas-backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
+

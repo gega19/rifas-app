@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # PostgreSQL for local development with Prisma
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-rifa_db}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rifa-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Backend API Server (Node.js + Prisma)
+  backend:
+    build:
+      context: ./rifas-backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/rifa_db?schema=public
+      - PORT=3001
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rifa-network
+    restart: unless-stopped
+    volumes:
+      - ./rifas-backend/src:/app/src
+      - ./rifas-backend/prisma:/app/prisma
+      - ./rifas-backend/node_modules:/app/node_modules
+
+  # Web pública (Frontend)
+  web:
+    build:
+      context: ./rifas-web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3001
+    volumes:
+      - ./rifas-web/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    networks:
+      - rifa-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backoffice (Admin Frontend)
+  backoffice:
+    build:
+      context: ./rifas-backoffice
+      dockerfile: Dockerfile
+    ports:
+      - "3002:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3001
+    volumes:
+      - ./rifas-backoffice/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    networks:
+      - rifa-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  rifa-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+
