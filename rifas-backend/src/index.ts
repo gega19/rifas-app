@@ -6,6 +6,7 @@ import adminAnalyticsRoutes from './routes/admin/analytics';
 import adminReferencesRoutes from './routes/admin/references';
 import adminParticipantsRoutes from './routes/admin/participants';
 import adminTicketsRoutes from './routes/admin/tickets';
+import adminResetRoutes from './routes/admin/reset';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -62,6 +63,7 @@ app.use('/admin/analytics', adminAnalyticsRoutes);
 app.use('/admin/references', adminReferencesRoutes);
 app.use('/admin/participants', adminParticipantsRoutes);
 app.use('/admin/tickets', adminTicketsRoutes);
+app.use('/admin', adminResetRoutes);
 
 // Export app for Vercel serverless
 export default app;

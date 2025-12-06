@@ -1,11 +1,24 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Users, Ticket, FileText, TrendingUp, RefreshCw, DollarSign } from 'lucide-react';
+import { Users, Ticket, FileText, TrendingUp, RefreshCw, DollarSign, Trash2 } from 'lucide-react';
 import { MetricCard } from '../components/MetricCard';
 import { StatsChart } from '../components/StatsChart';
 import { RecentActivity } from '../components/RecentActivity';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { getDashboardStats, getRecentActivity } from '../services/analyticsService';
+import { resetRaffle } from '../services/resetService';
+import { toast } from 'sonner';
 import type { DashboardStats, RecentActivity as RecentActivityType } from '@/types';
 
 export function Dashboard() {
@@ -13,6 +26,7 @@ export function Dashboard() {
   const [activities, setActivities] = useState<RecentActivityType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -35,6 +49,21 @@ export function Dashboard() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      await resetRaffle();
+      toast.success('Rifa reiniciada exitosamente');
+      // Recargar datos después del reset
+      await loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Error al reiniciar la rifa');
+      console.error('Error resetting raffle:', err);
+    } finally {
+      setResetting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -102,10 +131,46 @@ export function Dashboard() {
           </h1>
           <p className="text-gray-600 mt-1">Resumen general del sistema</p>
         </div>
-        <Button onClick={loadData} variant="outline" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Actualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={loadData} variant="outline" size="sm">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Actualizar
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={resetting}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Reiniciar Rifa
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción eliminará <strong>TODOS</strong> los datos de la rifa:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Todos los participantes</li>
+                    <li>Todos los tickets generados</li>
+                    <li>Se resetearán todas las referencias (marcadas como no usadas)</li>
+                  </ul>
+                  <p className="mt-3 font-semibold text-red-600">
+                    Esta acción NO se puede deshacer.
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleReset}
+                  className="bg-red-600 hover:bg-red-700"
+                  disabled={resetting}
+                >
+                  {resetting ? 'Reiniciando...' : 'Sí, Reiniciar Rifa'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       {/* Metrics Grid */}
