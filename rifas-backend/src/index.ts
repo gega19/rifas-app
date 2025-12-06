@@ -11,14 +11,20 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
+// Helper function to clean URLs (remove trailing slashes)
+const cleanUrl = (url: string | undefined): string | undefined => {
+  if (!url) return undefined;
+  return url.replace(/\/+$/, ''); // Remove trailing slashes
+};
+
 const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? [process.env.WEB_URL, process.env.BACKOFFICE_URL].filter((url): url is string => Boolean(url))
+  ? [cleanUrl(process.env.WEB_URL), cleanUrl(process.env.BACKOFFICE_URL)].filter((url): url is string => Boolean(url))
   : true; // Allow all origins in development
 
 if (process.env.NODE_ENV === 'production') {
   console.log('[CORS] Allowed origins:', allowedOrigins);
-  console.log('[CORS] WEB_URL:', process.env.WEB_URL);
-  console.log('[CORS] BACKOFFICE_URL:', process.env.BACKOFFICE_URL);
+  console.log('[CORS] WEB_URL:', process.env.WEB_URL, '-> cleaned:', cleanUrl(process.env.WEB_URL));
+  console.log('[CORS] BACKOFFICE_URL:', process.env.BACKOFFICE_URL, '-> cleaned:', cleanUrl(process.env.BACKOFFICE_URL));
 }
 
 app.use(cors({
