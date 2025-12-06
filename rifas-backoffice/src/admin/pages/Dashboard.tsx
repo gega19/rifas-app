@@ -27,6 +27,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -55,8 +56,12 @@ export function Dashboard() {
     try {
       await resetRaffle();
       toast.success('Rifa reiniciada exitosamente');
+      // Cerrar el diálogo
+      setShowResetDialog(false);
       // Recargar datos después del reset
       await loadData();
+      // Disparar evento personalizado para notificar a otros componentes
+      window.dispatchEvent(new CustomEvent('raffle-reset'));
     } catch (err: any) {
       toast.error(err.message || 'Error al reiniciar la rifa');
       console.error('Error resetting raffle:', err);
@@ -136,7 +141,7 @@ export function Dashboard() {
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
           </Button>
-          <AlertDialog>
+          <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={resetting}>
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -159,13 +164,23 @@ export function Dashboard() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogCancel disabled={resetting}>Cancelar</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={handleReset}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleReset();
+                  }}
                   className="bg-red-600 hover:bg-red-700"
                   disabled={resetting}
                 >
-                  {resetting ? 'Reiniciando...' : 'Sí, Reiniciar Rifa'}
+                  {resetting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Reiniciando...
+                    </>
+                  ) : (
+                    'Sí, Reiniciar Rifa'
+                  )}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

@@ -57,6 +57,22 @@ export function Tickets() {
     loadData();
   }, [page, filterUsed]);
 
+  // Escuchar evento de reset de rifa
+  useEffect(() => {
+    const handleRaffleReset = () => {
+      // Recargar datos cuando se reinicia la rifa
+      loadData();
+      setSearchResult(null);
+      setSearch('');
+      setPage(1);
+    };
+
+    window.addEventListener('raffle-reset', handleRaffleReset);
+    return () => {
+      window.removeEventListener('raffle-reset', handleRaffleReset);
+    };
+  }, []);
+
   const handleSearch = async () => {
     if (!search || search.length !== 4) {
       setError('Ingresa un número de ticket de 4 dígitos');

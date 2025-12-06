@@ -51,6 +51,22 @@ export function Participants() {
     loadParticipants();
   }, [page, filters]);
 
+  // Escuchar evento de reset de rifa
+  useEffect(() => {
+    const handleRaffleReset = () => {
+      // Recargar datos cuando se reinicia la rifa
+      loadParticipants();
+      setPage(1);
+      setSearch('');
+      setSelectedParticipant(null);
+    };
+
+    window.addEventListener('raffle-reset', handleRaffleReset);
+    return () => {
+      window.removeEventListener('raffle-reset', handleRaffleReset);
+    };
+  }, []);
+
   const handleSearch = () => {
     setPage(1);
     loadParticipants();

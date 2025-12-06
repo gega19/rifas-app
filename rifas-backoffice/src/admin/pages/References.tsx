@@ -52,6 +52,22 @@ export function References() {
     loadReferences();
   }, [page, filterUsed]);
 
+  // Escuchar evento de reset de rifa
+  useEffect(() => {
+    const handleRaffleReset = () => {
+      // Recargar datos cuando se reinicia la rifa
+      loadReferences();
+      setPage(1);
+      setSearch('');
+      setEditingReference(null);
+    };
+
+    window.addEventListener('raffle-reset', handleRaffleReset);
+    return () => {
+      window.removeEventListener('raffle-reset', handleRaffleReset);
+    };
+  }, []);
+
   const handleSearch = () => {
     setPage(1);
     loadReferences();
