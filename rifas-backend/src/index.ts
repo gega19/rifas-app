@@ -13,14 +13,14 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.WEB_URL, process.env.BACKOFFICE_URL].filter(Boolean)
+    ? [process.env.WEB_URL, process.env.BACKOFFICE_URL].filter((url): url is string => Boolean(url))
     : true, // Allow all origins in development
   credentials: true,
 }));
 app.use(express.json());
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 

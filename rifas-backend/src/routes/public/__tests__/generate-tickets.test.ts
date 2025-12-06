@@ -212,16 +212,22 @@ describe('Public API - Generate Tickets', () => {
     });
 
     it('should create participant with correct data', async () => {
+      const testRef = (global as any).currentTestRef || '123456';
       const response = await request(app)
         .post('/generate-tickets')
         .send({
-          reference: (global as any).currentTestRef || '123456',
+          reference: testRef,
           userData: validUserData,
           ticketCount: 5,
         });
 
+      // Find reference first to get its ID
+      const referenceData = await testPrisma.reference.findUnique({
+        where: { reference: testRef },
+      });
+
       const participant = await testPrisma.participant.findUnique({
-        where: { referenceId: ref },
+        where: { referenceId: referenceData?.id || '' },
       });
 
       expect(participant).not.toBeNull();
