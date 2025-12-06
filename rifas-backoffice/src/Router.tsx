@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './admin/components/ErrorBoundary';
 import { AuthProvider } from './admin/contexts/AuthContext';
+import { Toaster } from './components/ui/sonner';
 import { lazy, Suspense } from 'react';
 
 // Lazy load admin pages
@@ -74,6 +75,7 @@ export default function Router() {
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Routes>
         </BrowserRouter>
+        <Toaster />
       </AuthProvider>
     </ErrorBoundary>
   );
