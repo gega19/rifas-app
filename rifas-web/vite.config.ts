@@ -24,7 +24,7 @@ export default defineConfig({
             '@radix-ui/react-slot',
             '@radix-ui/react-alert-dialog',
           ],
-          motion: ['motion'],
+          motion: ['motion/react'],
         },
       },
     },
