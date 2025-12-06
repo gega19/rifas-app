@@ -22,7 +22,7 @@ RUN npm run build
 # Expose port
 EXPOSE 3001
 
-# Start server
-CMD ["npm", "start"]
+# Start server (run migrations first, then start)
+CMD ["npm", "run", "start:prod"]
 
 
