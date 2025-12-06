@@ -19,6 +19,21 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Root endpoint
+app.get('/', (_req, res) => {
+  res.json({ 
+    message: 'Rifas API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      validateReference: '/validate-reference',
+      generateTickets: '/generate-tickets',
+      admin: '/admin'
+    }
+  });
+});
+
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
