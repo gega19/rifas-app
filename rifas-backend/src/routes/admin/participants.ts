@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { verifyAdminAuth } from '../../middleware/auth';
 import { prisma } from '../../config/database';
+import { validateEmail, validatePhone, validateCedula } from '../../utils/validators';
 
 const router = Router();
 
@@ -39,8 +40,12 @@ router.get('/', verifyAdminAuth, async (req: Request, res: Response) => {
       }
     }
 
-    if (referenceId) {
-      where.referenceId = referenceId;
+    if (referenceId !== undefined) {
+      if (referenceId === 'null' || referenceId === '') {
+        where.referenceId = null;
+      } else {
+        where.referenceId = referenceId;
+      }
     }
 
     const [participants, total] = await Promise.all([
@@ -76,6 +81,150 @@ router.get('/', verifyAdminAuth, async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error fetching participants:', error);
     return res.status(500).json({ error: 'Error al obtener participantes' });
+  }
+});
+
+// Create participant (with or without reference)
+router.post('/', verifyAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { name, email, phone, cedula, ticketCount, referenceId } = req.body;
+
+    // Validaciones básicas
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Nombre inválido' });
+    }
+
+    if (!email || !validateEmail(email)) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+
+    if (!phone || !validatePhone(phone)) {
+      return res.status(400).json({ error: 'Teléfono inválido' });
+    }
+
+    if (!cedula || !validateCedula(cedula)) {
+      return res.status(400).json({ error: 'Cédula inválida' });
+    }
+
+    const ticketsToGenerate = ticketCount || 5;
+    if (typeof ticketsToGenerate !== 'number' || ticketsToGenerate < 1) {
+      return res.status(400).json({ error: 'Cantidad de tickets inválida (debe ser mayor a 0)' });
+    }
+
+    // Si se proporciona referencia, validarla
+    if (referenceId) {
+      if (typeof referenceId !== 'string' || referenceId.length !== 6 || !/^\d{6}$/.test(referenceId)) {
+        return res.status(400).json({ error: 'Referencia inválida' });
+      }
+
+      const refData = await prisma.reference.findUnique({
+        where: { reference: referenceId },
+      });
+
+      if (!refData) {
+        return res.status(400).json({ error: 'Referencia no encontrada' });
+      }
+
+      if (refData.used) {
+        return res.status(400).json({ error: 'Referencia ya utilizada' });
+      }
+    }
+
+    // Verificar que el email o cédula no estén duplicados
+    const existingParticipant = await prisma.participant.findFirst({
+      where: {
+        OR: [
+          { email },
+          { cedula },
+        ],
+      },
+    });
+
+    if (existingParticipant) {
+      return res.status(400).json({ 
+        error: 'Ya existe un participante con este email o cédula' 
+      });
+    }
+
+    // Obtener números de tickets ya usados
+    const usedTickets = await prisma.ticket.findMany({
+      where: { used: true },
+      select: { number: true },
+    });
+    const usedTicketNumbers = new Set(usedTickets.map(t => t.number));
+
+    // Generar números únicos
+    const generatedTickets: string[] = [];
+    const maxAttempts = 10000;
+    let attempts = 0;
+
+    while (generatedTickets.length < ticketsToGenerate && attempts < maxAttempts) {
+      const randomNumber = Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, '0');
+      
+      if (!usedTicketNumbers.has(randomNumber) && !generatedTickets.includes(randomNumber)) {
+        generatedTickets.push(randomNumber);
+        usedTicketNumbers.add(randomNumber);
+      }
+      attempts++;
+    }
+
+    if (generatedTickets.length < ticketsToGenerate) {
+      return res.status(400).json({ 
+        error: 'No hay suficientes números disponibles' 
+      });
+    }
+
+    // Crear participante y tickets en una transacción
+    const result = await prisma.$transaction(async (tx) => {
+      // Crear participante
+      const participant = await tx.participant.create({
+        data: {
+          referenceId: referenceId || null,
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          cedula: cedula.trim(),
+          tickets: generatedTickets,
+        },
+      });
+
+      // Crear tickets individuales
+      await tx.ticket.createMany({
+        data: generatedTickets.map(num => ({ number: num, used: true })),
+        skipDuplicates: true,
+      });
+
+      // Si hay referencia, marcarla como usada
+      if (referenceId) {
+        await tx.reference.update({
+          where: { reference: referenceId },
+          data: { used: true, usedAt: new Date() },
+        });
+      }
+
+      return participant;
+    });
+
+    return res.json({
+      id: result.id,
+      referenceId: result.referenceId,
+      name: result.name,
+      email: result.email,
+      phone: result.phone,
+      cedula: result.cedula,
+      tickets: result.tickets,
+      generatedAt: result.generatedAt.toISOString(),
+      createdAt: result.createdAt.toISOString(),
+      updatedAt: result.updatedAt.toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Error creating participant:', error);
+    if (error.code === 'P2002') {
+      return res.status(400).json({ error: 'Ya existe un participante con estos datos' });
+    }
+    return res.status(500).json({ error: 'Error al crear participante' });
   }
 });
 
@@ -176,8 +325,12 @@ router.get('/export', verifyAdminAuth, async (req: Request, res: Response) => {
       }
     }
 
-    if (referenceId) {
-      where.referenceId = referenceId;
+    if (referenceId !== undefined) {
+      if (referenceId === 'null' || referenceId === '') {
+        where.referenceId = null;
+      } else {
+        where.referenceId = referenceId;
+      }
     }
 
     const participants = await prisma.participant.findMany({
@@ -192,7 +345,7 @@ router.get('/export', verifyAdminAuth, async (req: Request, res: Response) => {
       p.email,
       p.phone,
       p.cedula,
-      p.referenceId,
+      p.referenceId || 'Sin referencia',
       p.tickets.join('; '),
       new Date(p.generatedAt).toLocaleString('es-VE'),
     ]);

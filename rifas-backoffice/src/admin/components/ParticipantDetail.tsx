@@ -67,16 +67,30 @@ export function ParticipantDetail({ participant, onClose }: ParticipantDetailPro
               </div>
 
               {/* Información de Referencia */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-cyan-600" />
-                  Información de Referencia
-                </h3>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Número de Referencia</p>
-                  <p className="font-mono text-2xl font-bold text-purple-600">{participant.referenceId}</p>
+              {participant.referenceId && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-cyan-600" />
+                    Información de Referencia
+                  </h3>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Número de Referencia</p>
+                    <p className="font-mono text-2xl font-bold text-purple-600">{participant.referenceId}</p>
+                  </div>
                 </div>
-              </div>
+              )}
+              {!participant.referenceId && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-cyan-600" />
+                    Información de Referencia
+                  </h3>
+                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800 mb-1">Tipo de Registro</p>
+                    <p className="font-semibold text-yellow-900">Sin referencia (Tickets regalados)</p>
+                  </div>
+                </div>
+              )}
 
               {/* Tickets */}
               <div>

@@ -28,18 +28,18 @@ model Reference {
 }
 
 model Participant {
-  id          String   @id @default(cuid())
-  referenceId String   @unique
+  id          String    @id @default(cuid())
+  referenceId String?   @unique
   name        String
   email       String
   phone       String
   cedula      String
   tickets     String[] // Array de números de tickets (0000-9999)
-  generatedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  generatedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   
-  reference   Reference @relation(fields: [referenceId], references: [reference], onDelete: Cascade)
+  reference   Reference? @relation(fields: [referenceId], references: [reference], onDelete: Cascade)
   
   @@index([email])
   @@index([cedula])

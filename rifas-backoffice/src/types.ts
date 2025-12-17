@@ -99,7 +99,7 @@ export interface ReferenceFormData {
 // Participant Types
 export interface Participant {
   id: string;
-  referenceId: string;
+  referenceId: string | null;
   name: string;
   email: string;
   phone: string;

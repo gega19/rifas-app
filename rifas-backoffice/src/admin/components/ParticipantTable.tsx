@@ -76,7 +76,11 @@ export function ParticipantTable({
                 <td className="py-3 px-4 text-sm text-gray-600">{participant.email}</td>
                 <td className="py-3 px-4 font-mono text-sm">{participant.cedula}</td>
                 <td className="py-3 px-4">
-                  <span className="font-mono font-semibold">{participant.referenceId}</span>
+                  {participant.referenceId ? (
+                    <span className="font-mono font-semibold">{participant.referenceId}</span>
+                  ) : (
+                    <span className="text-gray-400 italic text-sm">Sin referencia</span>
+                  )}
                 </td>
                 <td className="py-3 px-4">
                   <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">

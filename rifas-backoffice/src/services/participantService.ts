@@ -11,7 +11,7 @@ const API_BASE_URL = import.meta.env.DEV
 
 export interface Participant extends ParticipantData {
   id: string;
-  referenceId: string;
+  referenceId: string | null;
   createdAt: string;
   updatedAt: string;
 }

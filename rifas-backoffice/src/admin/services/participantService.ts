@@ -11,9 +11,18 @@ const API_BASE_URL = import.meta.env.DEV
 
 export interface Participant extends ParticipantData {
   id: string;
-  referenceId: string;
+  referenceId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateParticipantRequest {
+  name: string;
+  email: string;
+  phone: string;
+  cedula: string;
+  ticketCount?: number;
+  referenceId?: string | null;
 }
 
 export interface ParticipantListResponse {
@@ -117,6 +126,34 @@ export const searchParticipants = async (query: string): Promise<Participant[]> 
   } catch (error: any) {
     console.error('Error searching participants:', error);
     throw new Error(error.message || 'Error al buscar participantes');
+  }
+};
+
+/**
+ * Create a new participant (with or without reference)
+ */
+export const createParticipant = async (
+  data: CreateParticipantRequest
+): Promise<Participant> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/participants`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('rifa_admin_auth')}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al crear participante');
+    }
+
+    return response.json();
+  } catch (error: any) {
+    console.error('Error creating participant:', error);
+    throw new Error(error.message || 'Error al crear participante');
   }
 };
 

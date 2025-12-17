@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, Download, RefreshCw, Eye } from 'lucide-react';
+import { Search, Download, RefreshCw, Eye, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import {
 import { ParticipantTable } from '../components/ParticipantTable';
 import { ParticipantDetail } from '../components/ParticipantDetail';
 import { ParticipantFilters } from '../components/ParticipantFilters';
+import { CreateParticipantModal } from '../components/CreateParticipantModal';
 
 export function Participants() {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -28,6 +29,7 @@ export function Participants() {
     referenceId?: string;
   }>({});
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const loadParticipants = async () => {
     setLoading(true);
@@ -106,10 +108,16 @@ export function Participants() {
           </h1>
           <p className="text-gray-600 mt-1">Lista de todos los participantes registrados</p>
         </div>
-        <Button onClick={handleExport} variant="outline" size="sm">
-          <Download className="w-4 h-4 mr-2" />
-          Exportar
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setCreateModalOpen(true)} size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Crear Participante
+          </Button>
+          <Button onClick={handleExport} variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -167,6 +175,15 @@ export function Participants() {
           onClose={() => setSelectedParticipant(null)}
         />
       )}
+
+      {/* Create Participant Modal */}
+      <CreateParticipantModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => {
+          loadParticipants();
+        }}
+      />
     </div>
   );
 }
