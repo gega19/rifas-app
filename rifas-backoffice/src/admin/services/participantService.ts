@@ -158,6 +158,35 @@ export const createParticipant = async (
 };
 
 /**
+ * Update participant - add or remove tickets
+ */
+export const updateParticipantTickets = async (
+  id: string,
+  data: { addTickets?: number; removeTickets?: string[] }
+): Promise<Participant> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/participants/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('rifa_admin_auth')}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al actualizar participante');
+    }
+
+    return response.json();
+  } catch (error: any) {
+    console.error('Error updating participant:', error);
+    throw new Error(error.message || 'Error al actualizar participante');
+  }
+};
+
+/**
  * Export participants to CSV
  */
 export const exportParticipants = async (filters?: {

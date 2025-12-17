@@ -32,9 +32,6 @@ async function main() {
   // Create some test references if they don't exist
   const testReferences = [
     { reference: '123456', ticketCount: 5 },
-    { reference: '654321', ticketCount: 10 },
-    { reference: '111111', ticketCount: 3 },
-    { reference: '999999', ticketCount: 7 },
   ];
 
   for (const ref of testReferences) {

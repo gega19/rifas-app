@@ -130,22 +130,6 @@ router.post('/', verifyAdminAuth, async (req: Request, res: Response) => {
       }
     }
 
-    // Verificar que el email o cédula no estén duplicados
-    const existingParticipant = await prisma.participant.findFirst({
-      where: {
-        OR: [
-          { email },
-          { cedula },
-        ],
-      },
-    });
-
-    if (existingParticipant) {
-      return res.status(400).json({ 
-        error: 'Ya existe un participante con este email o cédula' 
-      });
-    }
-
     // Obtener números de tickets ya usados
     const usedTickets = await prisma.ticket.findMany({
       where: { used: true },
@@ -259,6 +243,123 @@ router.get('/:id', verifyAdminAuth, async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error fetching participant:', error);
     return res.status(500).json({ error: 'Error al obtener participante' });
+  }
+});
+
+// Update participant - agregar o quitar tickets
+router.put('/:id', verifyAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { addTickets, removeTickets } = req.body;
+
+    const participant = await prisma.participant.findUnique({
+      where: { id },
+    });
+
+    if (!participant) {
+      return res.status(404).json({ error: 'Participante no encontrado' });
+    }
+
+    let newTickets = [...participant.tickets];
+    let ticketsToCreate: string[] = [];
+    let ticketsToRemove: string[] = [];
+
+    // Agregar tickets
+    if (addTickets && typeof addTickets === 'number' && addTickets > 0) {
+      // Obtener números de tickets ya usados
+      const usedTickets = await prisma.ticket.findMany({
+        where: { used: true },
+        select: { number: true },
+      });
+      const usedTicketNumbers = new Set(usedTickets.map(t => t.number));
+      
+      // Excluir los tickets que ya tiene el participante
+      participant.tickets.forEach(t => usedTicketNumbers.add(t));
+
+      // Generar números únicos
+      const generatedTickets: string[] = [];
+      const maxAttempts = 10000;
+      let attempts = 0;
+
+      while (generatedTickets.length < addTickets && attempts < maxAttempts) {
+        const randomNumber = Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, '0');
+        
+        if (!usedTicketNumbers.has(randomNumber) && !generatedTickets.includes(randomNumber)) {
+          generatedTickets.push(randomNumber);
+          usedTicketNumbers.add(randomNumber);
+        }
+        attempts++;
+      }
+
+      if (generatedTickets.length < addTickets) {
+        return res.status(400).json({ 
+          error: `Solo se pudieron generar ${generatedTickets.length} de ${addTickets} tickets solicitados` 
+        });
+      }
+
+      ticketsToCreate = generatedTickets;
+      newTickets = [...newTickets, ...generatedTickets];
+    }
+
+    // Quitar tickets
+    if (removeTickets && Array.isArray(removeTickets) && removeTickets.length > 0) {
+      // Validar que los tickets a quitar existan
+      const invalidTickets = removeTickets.filter(t => !participant.tickets.includes(t));
+      if (invalidTickets.length > 0) {
+        return res.status(400).json({ 
+          error: `Los siguientes tickets no pertenecen a este participante: ${invalidTickets.join(', ')}` 
+        });
+      }
+
+      ticketsToRemove = removeTickets;
+      newTickets = newTickets.filter(t => !removeTickets.includes(t));
+    }
+
+    if (ticketsToCreate.length === 0 && ticketsToRemove.length === 0) {
+      return res.status(400).json({ error: 'Debes especificar tickets para agregar o quitar' });
+    }
+
+    // Actualizar en transacción
+    const result = await prisma.$transaction(async (tx) => {
+      // Actualizar participante
+      const updated = await tx.participant.update({
+        where: { id },
+        data: {
+          tickets: newTickets,
+        },
+      });
+
+      // Crear nuevos tickets si hay
+      if (ticketsToCreate.length > 0) {
+        await tx.ticket.createMany({
+          data: ticketsToCreate.map(num => ({ number: num, used: true })),
+          skipDuplicates: true,
+        });
+      }
+
+      // Marcar tickets removidos como no usados (opcional, puedes eliminarlos si prefieres)
+      // Por ahora los dejamos como usados pero los removemos del participante
+
+      return updated;
+    });
+
+    return res.json({
+      id: result.id,
+      referenceId: result.referenceId,
+      name: result.name,
+      email: result.email,
+      phone: result.phone,
+      cedula: result.cedula,
+      tickets: result.tickets,
+      generatedAt: result.generatedAt.toISOString(),
+      createdAt: result.createdAt.toISOString(),
+      updatedAt: result.updatedAt.toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Error updating participant:', error);
+    return res.status(500).json({ error: 'Error al actualizar participante' });
   }
 });
 

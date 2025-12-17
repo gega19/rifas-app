@@ -179,7 +179,20 @@ export function Participants() {
       {selectedParticipant && (
         <ParticipantDetail
           participant={selectedParticipant}
-          onClose={() => setSelectedParticipant(null)}
+          onClose={() => {
+            setSelectedParticipant(null);
+          }}
+          onUpdate={async () => {
+            // Recargar el participante actualizado
+            try {
+              const updated = await getParticipantById(selectedParticipant.id);
+              setSelectedParticipant(updated);
+              // También recargar la lista
+              loadParticipants();
+            } catch (err: any) {
+              console.error('Error al recargar participante:', err);
+            }
+          }}
         />
       )}
 

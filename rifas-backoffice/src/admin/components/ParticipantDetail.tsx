@@ -1,15 +1,72 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Ticket, User, Mail, Phone, CreditCard, FileText, Calendar } from 'lucide-react';
+import { X, Ticket, User, Mail, Phone, CreditCard, FileText, Calendar, Plus, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import type { Participant } from '../services/participantService';
+import { updateParticipantTickets } from '../services/participantService';
 
 interface ParticipantDetailProps {
   participant: Participant;
   onClose: () => void;
+  onUpdate?: () => void;
 }
 
-export function ParticipantDetail({ participant, onClose }: ParticipantDetailProps) {
+export function ParticipantDetail({ participant, onClose, onUpdate }: ParticipantDetailProps) {
+  const [loading, setLoading] = useState(false);
+  const [showAddTickets, setShowAddTickets] = useState(false);
+  const [ticketsToAdd, setTicketsToAdd] = useState(1);
+  const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
+
+  const handleAddTickets = async () => {
+    if (ticketsToAdd < 1) {
+      toast.error('La cantidad debe ser mayor a 0');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await updateParticipantTickets(participant.id, { addTickets: ticketsToAdd });
+      toast.success(`${ticketsToAdd} ticket(s) agregado(s) exitosamente`);
+      setShowAddTickets(false);
+      setTicketsToAdd(1);
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Error al agregar tickets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveTickets = async () => {
+    if (selectedTickets.length === 0) {
+      toast.error('Selecciona al menos un ticket para quitar');
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de quitar ${selectedTickets.length} ticket(s)?`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await updateParticipantTickets(participant.id, { removeTickets: selectedTickets });
+      toast.success(`${selectedTickets.length} ticket(s) eliminado(s) exitosamente`);
+      setSelectedTickets([]);
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Error al quitar tickets');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <AnimatePresence>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -94,10 +151,71 @@ export function ParticipantDetail({ participant, onClose }: ParticipantDetailPro
 
               {/* Tickets */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Ticket className="w-5 h-5 text-pink-600" />
-                  Tickets Asignados ({participant.tickets.length})
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-pink-600" />
+                    Tickets Asignados ({participant.tickets.length})
+                  </h3>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowAddTickets(!showAddTickets)}
+                      disabled={loading}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Agregar
+                    </Button>
+                    {selectedTickets.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleRemoveTickets}
+                        disabled={loading}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Quitar ({selectedTickets.length})
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {showAddTickets && (
+                  <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <Label htmlFor="ticketsToAdd">Cantidad de tickets a agregar</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        id="ticketsToAdd"
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={ticketsToAdd}
+                        onChange={(e) => setTicketsToAdd(parseInt(e.target.value) || 1)}
+                        disabled={loading}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleAddTickets}
+                        disabled={loading || ticketsToAdd < 1}
+                        size="sm"
+                      >
+                        {loading ? 'Agregando...' : 'Agregar'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowAddTickets(false);
+                          setTicketsToAdd(1);
+                        }}
+                        disabled={loading}
+                        size="sm"
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-5 gap-3">
                   {participant.tickets.map((ticket, index) => (
                     <motion.div
@@ -105,12 +223,31 @@ export function ParticipantDetail({ participant, onClose }: ParticipantDetailPro
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: index * 0.05 }}
-                      className="p-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg text-center border-2 border-purple-300"
+                      className={`p-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg text-center border-2 cursor-pointer transition-all ${
+                        selectedTickets.includes(ticket)
+                          ? 'border-red-500 bg-red-100'
+                          : 'border-purple-300 hover:border-purple-500'
+                      }`}
+                      onClick={() => {
+                        if (selectedTickets.includes(ticket)) {
+                          setSelectedTickets(selectedTickets.filter(t => t !== ticket));
+                        } else {
+                          setSelectedTickets([...selectedTickets, ticket]);
+                        }
+                      }}
                     >
                       <p className="font-mono text-lg font-bold text-purple-900">{ticket}</p>
+                      {selectedTickets.includes(ticket) && (
+                        <p className="text-xs text-red-600 mt-1">Seleccionado</p>
+                      )}
                     </motion.div>
                   ))}
                 </div>
+                {selectedTickets.length > 0 && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    {selectedTickets.length} ticket(s) seleccionado(s). Haz clic en "Quitar" para eliminarlos.
+                  </p>
+                )}
               </div>
 
               {/* Fechas */}
