@@ -87,8 +87,9 @@ export function CreateParticipantModal({
     }
   };
 
-  const handleClose = () => {
-    if (!loading) {
+  const handleOpenChange = (newOpen: boolean) => {
+    console.log('onOpenChange llamado con:', newOpen, 'loading:', loading);
+    if (!newOpen && !loading) {
       reset();
       onClose();
     }
@@ -97,8 +98,25 @@ export function CreateParticipantModal({
   console.log('CreateParticipantModal renderizando, open:', open);
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
+      <DialogContent 
+        className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto"
+        onEscapeKeyDown={(e) => {
+          if (loading) {
+            e.preventDefault();
+          }
+        }}
+        onPointerDownOutside={(e) => {
+          if (loading) {
+            e.preventDefault();
+          }
+        }}
+        onInteractOutside={(e) => {
+          if (loading) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Crear Participante</DialogTitle>
           <DialogDescription>
