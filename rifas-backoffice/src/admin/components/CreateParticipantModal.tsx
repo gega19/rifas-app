@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
@@ -15,69 +14,96 @@ interface CreateParticipantModalProps {
   onSuccess: () => void;
 }
 
-interface FormData {
-  name: string;
-  email: string;
-  phone: string;
-  cedula: string;
-  ticketCount: number;
-  referenceId?: string;
-}
-
 export function CreateParticipantModal({ 
   open, 
   onClose, 
   onSuccess 
 }: CreateParticipantModalProps) {
   const [loading, setLoading] = useState(false);
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors }, 
-    reset,
-    watch
-  } = useForm<FormData>({
-    defaultValues: {
-      ticketCount: 5,
-      referenceId: '',
-    }
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    cedula: '',
+    ticketCount: 5,
+    referenceId: '',
   });
-
-  const referenceId = watch('referenceId');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open) {
-      reset();
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        cedula: '',
+        ticketCount: 5,
+        referenceId: '',
+      });
+      setError('');
     }
-  }, [open, reset]);
+  }, [open]);
 
-  const onSubmit = async (data: FormData) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validaciones
+    if (!formData.name || formData.name.trim().length < 2) {
+      setError('El nombre debe tener al menos 2 caracteres');
+      return;
+    }
+
+    if (!formData.email || !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+      setError('Email inválido');
+      return;
+    }
+
+    if (!formData.phone || !/^[0-9+\-\s()]+$/.test(formData.phone)) {
+      setError('Teléfono inválido');
+      return;
+    }
+
+    if (!formData.cedula || !/^[0-9VEve-]+$/.test(formData.cedula)) {
+      setError('Cédula inválida');
+      return;
+    }
+
+    if (!formData.ticketCount || formData.ticketCount < 1) {
+      setError('La cantidad de tickets debe ser mayor a 0');
+      return;
+    }
+
+    if (formData.referenceId && (!/^\d{6}$/.test(formData.referenceId))) {
+      setError('La referencia debe tener 6 dígitos');
+      return;
+    }
+
     setLoading(true);
     try {
-      console.log('Enviando datos del participante:', {
-        name: data.name.trim(),
-        email: data.email.trim(),
-        ticketCount: data.ticketCount || 5,
-        hasReference: !!data.referenceId,
-      });
-
       const result = await createParticipant({
-        name: data.name.trim(),
-        email: data.email.trim(),
-        phone: data.phone.trim(),
-        cedula: data.cedula.trim(),
-        ticketCount: data.ticketCount || 5,
-        referenceId: data.referenceId && data.referenceId.trim() ? data.referenceId.trim() : null,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        cedula: formData.cedula.trim(),
+        ticketCount: formData.ticketCount,
+        referenceId: formData.referenceId && formData.referenceId.trim() ? formData.referenceId.trim() : null,
       });
       
-      console.log('Participante creado exitosamente:', result);
       toast.success('Participante creado exitosamente');
-      reset();
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        cedula: '',
+        ticketCount: 5,
+        referenceId: '',
+      });
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Error al crear participante:', error);
       const errorMessage = error?.message || error?.error || 'Error al crear participante';
+      setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -86,7 +112,6 @@ export function CreateParticipantModal({
 
   const handleClose = () => {
     if (!loading) {
-      reset();
       onClose();
     }
   };
@@ -121,22 +146,25 @@ export function CreateParticipantModal({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+
               <div>
                 <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
-                  {...register('name', { 
-                    required: 'El nombre es requerido',
-                    minLength: { value: 2, message: 'Mínimo 2 caracteres' }
-                  })}
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Juan Pérez"
                   disabled={loading}
                   className="mt-1"
+                  required
                 />
-                {errors.name && (
-                  <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
-                )}
               </div>
 
               <div>
@@ -144,60 +172,41 @@ export function CreateParticipantModal({
                 <Input
                   id="email"
                   type="email"
-                  {...register('email', { 
-                    required: 'El email es requerido',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Email inválido'
-                    }
-                  })}
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="juan@example.com"
                   disabled={loading}
                   className="mt-1"
+                  required
                 />
-                {errors.email && (
-                  <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
-                )}
               </div>
 
               <div>
                 <Label htmlFor="phone">Teléfono *</Label>
                 <Input
                   id="phone"
-                  {...register('phone', { 
-                    required: 'El teléfono es requerido',
-                    pattern: {
-                      value: /^[0-9+\-\s()]+$/,
-                      message: 'Teléfono inválido'
-                    }
-                  })}
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+58 412 1234567"
                   disabled={loading}
                   className="mt-1"
+                  required
                 />
-                {errors.phone && (
-                  <p className="text-sm text-red-500 mt-1">{errors.phone.message}</p>
-                )}
               </div>
 
               <div>
                 <Label htmlFor="cedula">Cédula *</Label>
                 <Input
                   id="cedula"
-                  {...register('cedula', { 
-                    required: 'La cédula es requerida',
-                    pattern: {
-                      value: /^[0-9VEve-]+$/,
-                      message: 'Cédula inválida'
-                    }
-                  })}
+                  type="text"
+                  value={formData.cedula}
+                  onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
                   placeholder="12345678 o V-12345678"
                   disabled={loading}
                   className="mt-1"
+                  required
                 />
-                {errors.cedula && (
-                  <p className="text-sm text-red-500 mt-1">{errors.cedula.message}</p>
-                )}
               </div>
 
               <div>
@@ -206,40 +215,29 @@ export function CreateParticipantModal({
                   id="ticketCount"
                   type="number"
                   min="1"
-                  {...register('ticketCount', { 
-                    required: 'La cantidad es requerida',
-                    min: { value: 1, message: 'Mínimo 1 ticket' },
-                    max: { value: 100, message: 'Máximo 100 tickets' },
-                    valueAsNumber: true
-                  })}
+                  max="100"
+                  value={formData.ticketCount}
+                  onChange={(e) => setFormData({ ...formData, ticketCount: parseInt(e.target.value) || 5 })}
                   disabled={loading}
                   className="mt-1"
+                  required
                 />
-                {errors.ticketCount && (
-                  <p className="text-sm text-red-500 mt-1">{errors.ticketCount.message}</p>
-                )}
               </div>
 
               <div>
                 <Label htmlFor="referenceId">Referencia (Opcional)</Label>
                 <Input
                   id="referenceId"
-                  {...register('referenceId', {
-                    pattern: {
-                      value: /^\d{6}$/,
-                      message: 'Debe ser un código de 6 dígitos'
-                    }
-                  })}
+                  type="text"
+                  value={formData.referenceId}
+                  onChange={(e) => setFormData({ ...formData, referenceId: e.target.value.slice(0, 6) })}
                   placeholder="123456 (opcional)"
                   maxLength={6}
                   disabled={loading}
                   className="mt-1"
                 />
-                {errors.referenceId && (
-                  <p className="text-sm text-red-500 mt-1">{errors.referenceId.message}</p>
-                )}
                 <p className="text-xs text-gray-500 mt-1">
-                  {referenceId 
+                  {formData.referenceId 
                     ? 'Si se proporciona, la referencia será marcada como usada'
                     : 'Dejar vacío para crear sin referencia (tickets regalados)'}
                 </p>
