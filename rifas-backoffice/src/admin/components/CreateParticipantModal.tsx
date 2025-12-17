@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -84,6 +85,10 @@ export function CreateParticipantModal({
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Crear Participante</DialogTitle>
+          <DialogDescription>
+            Completa el formulario para crear un nuevo participante y generar tickets. 
+            Puedes dejar el campo de referencia vacío para crear tickets sin referencia.
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
