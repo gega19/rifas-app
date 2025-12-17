@@ -95,6 +95,13 @@ export function CreateParticipantModal({
     }
   };
 
+  const handleClose = () => {
+    if (!loading) {
+      reset();
+      onClose();
+    }
+  };
+
   console.log('CreateParticipantModal renderizando, open:', open);
 
   return (
