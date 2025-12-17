@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
@@ -50,6 +50,10 @@ export function CreateParticipantModal({
 
   const referenceId = watch('referenceId');
 
+  useEffect(() => {
+    console.log('CreateParticipantModal montado, open:', open);
+  }, [open]);
+
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
@@ -89,6 +93,8 @@ export function CreateParticipantModal({
       onClose();
     }
   };
+
+  console.log('CreateParticipantModal renderizando, open:', open);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

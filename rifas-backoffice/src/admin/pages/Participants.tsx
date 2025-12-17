@@ -109,7 +109,14 @@ export function Participants() {
           <p className="text-gray-600 mt-1">Lista de todos los participantes registrados</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setCreateModalOpen(true)} size="sm">
+          <Button 
+            onClick={() => {
+              console.log('Botón clickeado, estado actual:', createModalOpen);
+              setCreateModalOpen(true);
+              console.log('Estado después de setState:', true);
+            }} 
+            size="sm"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Crear Participante
           </Button>
@@ -177,9 +184,13 @@ export function Participants() {
       )}
 
       {/* Create Participant Modal */}
+      {console.log('Renderizando modal, open:', createModalOpen)}
       <CreateParticipantModal
         open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        onClose={() => {
+          console.log('Cerrando modal');
+          setCreateModalOpen(false);
+        }}
         onSuccess={() => {
           loadParticipants();
         }}
