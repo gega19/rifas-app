@@ -13,7 +13,8 @@ export default defineConfig({
   build: {
     target: 'esnext',
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Deshabilitar sourcemaps en producción para evitar eval
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {

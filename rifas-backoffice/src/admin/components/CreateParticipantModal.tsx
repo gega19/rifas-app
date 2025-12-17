@@ -53,7 +53,14 @@ export function CreateParticipantModal({
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      await createParticipant({
+      console.log('Enviando datos del participante:', {
+        name: data.name.trim(),
+        email: data.email.trim(),
+        ticketCount: data.ticketCount || 5,
+        hasReference: !!data.referenceId,
+      });
+
+      const result = await createParticipant({
         name: data.name.trim(),
         email: data.email.trim(),
         phone: data.phone.trim(),
@@ -62,12 +69,15 @@ export function CreateParticipantModal({
         referenceId: data.referenceId && data.referenceId.trim() ? data.referenceId.trim() : null,
       });
       
+      console.log('Participante creado exitosamente:', result);
       toast.success('Participante creado exitosamente');
       reset();
       onSuccess();
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Error al crear participante');
+      console.error('Error al crear participante:', error);
+      const errorMessage = error?.message || error?.error || 'Error al crear participante';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
